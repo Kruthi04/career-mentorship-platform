@@ -2,56 +2,77 @@ const mongoose = require("mongoose");
 
 const sessionSchema = new mongoose.Schema(
   {
-    mentorId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Mentor",
-      required: true,
-    },
-    menteeId: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
+    mentorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Mentor",
+      required: false, // Allow null for pending sessions
+    },
     title: {
       type: String,
       required: true,
+      trim: true,
     },
     description: {
       type: String,
+      trim: true,
     },
-    date: {
-      type: Date,
-      required: true,
-    },
-    duration: {
-      type: Number, // in minutes
+    sessionType: {
+      type: String,
+      enum: [
+        "resume_review",
+        "interview_prep",
+        "linkedin_review",
+        "career_guidance",
+        "other",
+      ],
       required: true,
     },
     status: {
       type: String,
-      enum: ["scheduled", "completed", "cancelled", "no-show"],
-      default: "scheduled",
+      enum: ["pending", "upcoming", "completed", "cancelled"],
+      default: "pending",
     },
-    platform: {
+    scheduledDate: {
+      type: Date,
+    },
+    scheduledTime: {
       type: String,
-      default: "Zoom",
     },
-    meetingLink: {
-      type: String,
-    },
-    hourlyRate: {
-      type: Number,
-      required: true,
-    },
-    totalAmount: {
-      type: Number,
-      required: true,
+    duration: {
+      type: Number, // in minutes
+      default: 60,
     },
     notes: {
       type: String,
+      trim: true,
+    },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    review: {
+      type: String,
+      trim: true,
+    },
+    // For career services that become sessions
+    careerServiceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Resume",
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
+
+// Index for efficient queries
+sessionSchema.index({ userId: 1, status: 1 });
+sessionSchema.index({ mentorId: 1, status: 1 });
 
 module.exports = mongoose.model("Session", sessionSchema);

@@ -9,9 +9,9 @@ export const Footer = () => {
 
   const handleBecomeMentor = () => {
     if (user) {
-      navigate("/mentor-connect/apply");
+      navigate("/mentor-application");
     } else {
-      navigate("/mentor-connect/signin", {
+      navigate("/mentor-signin", {
         state: { wantsToBecomeMentor: true },
       });
     }
@@ -19,7 +19,7 @@ export const Footer = () => {
 
   const handleMentorAction = () => {
     if (user?.isMentor) {
-      navigate("/mentor-connect/dashboard");
+      navigate("/mentor-dashboard");
     } else {
       handleBecomeMentor();
     }
@@ -57,7 +57,7 @@ export const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/mentor-connect"
+                  to="/all-categories"
                   className="text-gray-600 hover:text-blue-600"
                 >
                   Explore Categories

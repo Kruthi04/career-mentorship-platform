@@ -12,9 +12,12 @@ import {
   SendIcon,
   MaximizeIcon,
 } from "lucide-react";
+
 export const CareerHome = () => {
   const [chatbotMinimized, setChatbotMinimized] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<string | null>("resume");
+
   const services = [
     {
       id: "resume",
@@ -35,7 +38,7 @@ export const CareerHome = () => {
     {
       id: "linkedin",
       title: "LinkedIn Profile Fix",
-      icon: <LinkedinIcon size={24} className="text-blue-600" />,
+      icon: <LinkedinIcon size={24} className="text-blue-700" />,
       description:
         "Optimize your LinkedIn profile to attract recruiters and showcase your expertise.",
       features: [
@@ -51,7 +54,7 @@ export const CareerHome = () => {
     {
       id: "interview",
       title: "Interview Preparation",
-      icon: <UserIcon size={24} className="text-blue-600" />,
+      icon: <UserIcon size={24} className="text-gray-600" />,
       description:
         "Practice with industry experts to ace your upcoming interviews.",
       features: [
@@ -81,6 +84,7 @@ export const CareerHome = () => {
       link: "/career-boost/get-referral",
     },
   ];
+
   return (
     <div className="w-full bg-white">
       {/* Hero Section with Background Image */}
@@ -92,86 +96,96 @@ export const CareerHome = () => {
             alt="Career professionals collaborating"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-blue-900 opacity-70"></div>
+          <div className="absolute inset-0 bg-blue-700 opacity-70"></div>
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl">
             <h1 className="text-3xl md:text-5xl font-bold mb-4">
               Looking for the next step in your career? Talk to an expert
             </h1>
-            <p className="text-xl text-blue-100 mb-8">
-              Accelerate your career with personalized guidance from proven
-              professionals.
+            <p className="text-xl mb-8 text-blue-100">
+              Get personalized guidance from industry professionals to
+              accelerate your career growth.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
-                to="#services"
-                className="px-6 py-3 bg-white text-blue-600 font-semibold rounded-md hover:bg-blue-50 text-center"
-              >
-                Explore Services
-              </Link>
-              <Link
                 to="/mentor-connect"
-                className="px-6 py-3 bg-blue-700 text-white font-semibold rounded-md hover:bg-blue-800 text-center"
+                className="bg-white text-blue-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors text-center"
               >
                 Find a Mentor
+              </Link>
+              <Link
+                to="/career-boost"
+                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-700 transition-colors text-center"
+              >
+                Get Started
               </Link>
             </div>
           </div>
         </div>
       </section>
+
       {/* Services Section */}
-      <section id="services" className="py-16">
+      <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-800 mb-4">
               Our Career Services
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Choose the right service to help you advance your career and land
-              your dream job.
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-4">
+              Choose from our range of professional services designed to help
+              you succeed in your career journey.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {services.map((service) => (
               <div
                 key={service.id}
-                className={`bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105 border ${
-                  service.popular ? "border-blue-500" : "border-gray-200"
+                className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all duration-300 flex flex-col h-full cursor-pointer relative ${
+                  selectedCard === service.id
+                    ? "ring-2 ring-blue-500 shadow-xl transform scale-105 bg-blue-50"
+                    : ""
                 }`}
+                onClick={() =>
+                  setSelectedCard(
+                    selectedCard === service.id ? null : service.id
+                  )
+                }
               >
                 {service.popular && (
-                  <div className="bg-blue-500 text-white text-center py-1 text-sm font-medium">
-                    Most Popular
+                  <div className="absolute -top-3 -right-3 z-10">
+                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg animate-pulse">
+                      Most Popular
+                    </div>
                   </div>
                 )}
-                <div className="p-6">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                    {service.icon}
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">
-                    {service.title}
-                  </h3>
-                  <p className="text-gray-600 mb-6">{service.description}</p>
-                  <ul className="space-y-2 mb-6">
-                    {service.features.map((feature, index) => (
-                      <li
-                        key={index}
-                        className="flex items-center text-gray-700"
-                      >
-                        <span className="mr-2 text-blue-600">✓</span> {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-2xl font-bold text-gray-800">
-                      {service.price}
-                    </span>
-                    <span className="text-gray-500">one-time</span>
-                  </div>
+                <div className="mb-4">{service.icon}</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  {service.title}
+                </h3>
+                <p className="text-gray-600 mb-4 flex-grow">
+                  {service.description}
+                </p>
+                <ul className="space-y-2 mb-6">
+                  {service.features.map((feature, index) => (
+                    <li key={index} className="flex items-start">
+                      <CheckIcon
+                        size={16}
+                        className="text-blue-500 mr-2 mt-0.5 flex-shrink-0"
+                      />
+                      <span className="text-sm text-gray-600">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex items-center justify-between mt-auto">
+                  <span className="text-2xl font-bold text-blue-600">
+                    {service.price}
+                  </span>
                   <Link
                     to={service.link}
-                    className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 block text-center"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     Get Started
                   </Link>
@@ -181,33 +195,21 @@ export const CareerHome = () => {
           </div>
         </div>
       </section>
-      <div className="bg-gray-50">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 1440 80"
-          className="fill-white w-full"
-        >
-          <path d="M0,32L60,37.3C120,43,240,53,360,53.3C480,53,600,43,720,42.7C840,43,960,53,1080,58.7C1200,64,1320,64,1380,64L1440,64L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
-        </svg>
-      </div>
+
       {/* How It Works Section */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              How It Works
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our simple process helps you get the career guidance you need
-              quickly and efficiently.
-            </p>
-          </div>
+          <h2 className="text-3xl font-bold text-gray-800 text-center mb-12">
+            How CareerBoost Works
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-                <span className="text-xl font-bold text-blue-600">1</span>
+            <div className="text-center relative">
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 relative z-10">
+                <FileTextIcon size={32} className="text-blue-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">
+              {/* Connector line */}
+              <div className="hidden md:block absolute top-10 left-1/2 w-full h-0.5 bg-blue-100 -z-0"></div>
+              <h3 className="text-xl font-bold text-gray-800 mb-3">
                 Choose a Service
               </h3>
               <p className="text-gray-600">
@@ -215,11 +217,13 @@ export const CareerHome = () => {
                 goals.
               </p>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-                <span className="text-xl font-bold text-blue-600">2</span>
+            <div className="text-center relative">
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 relative z-10">
+                <UploadIcon size={32} className="text-blue-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">
+              {/* Connector line */}
+              <div className="hidden md:block absolute top-10 left-1/2 w-full h-0.5 bg-blue-100 -z-0"></div>
+              <h3 className="text-xl font-bold text-gray-800 mb-3">
                 Submit Your Materials
               </h3>
               <p className="text-gray-600">
@@ -228,10 +232,10 @@ export const CareerHome = () => {
               </p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-                <span className="text-xl font-bold text-blue-600">3</span>
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckIcon size={32} className="text-blue-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">
+              <h3 className="text-xl font-bold text-gray-800 mb-3">
                 Get Expert Feedback
               </h3>
               <p className="text-gray-600">

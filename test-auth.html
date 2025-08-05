@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Test</title>
+</head>
+<body>
+    <h1>Authentication Test</h1>
+    <div id="output"></div>
+    
+    <script>
+        function checkAuth() {
+            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
+            
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <h2>Authentication Status:</h2>
+                <p><strong>User:</strong> ${user ? 'Present' : 'Missing'}</p>
+                <p><strong>Token:</strong> ${token ? 'Present' : 'Missing'}</p>
+                ${user ? `<p><strong>User Data:</strong> ${user}</p>` : ''}
+                ${token ? `<p><strong>Token (first 20 chars):</strong> ${token.substring(0, 20)}...</p>` : ''}
+            `;
+        }
+        
+        // Check on load
+        checkAuth();
+        
+        // Add button to test API call
+        const testButton = document.createElement('button');
+        testButton.textContent = 'Test API Call';
+        testButton.onclick = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('No token found!');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/mentors/my-details', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                alert(`Status: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        };
+        
+        document.body.appendChild(testButton);
+    </script>
+</body>
+</html> 

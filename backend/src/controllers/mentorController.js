@@ -4,10 +4,72 @@ const Session = require("../models/Session");
 const Review = require("../models/Review");
 const bcrypt = require("bcryptjs");
 const { upload, deleteFileFromS3, getS3Url } = require("../config/s3");
+const nodemailer = require("nodemailer");
+const crypto = require("crypto");
+
+// Profile image URL cache to avoid repeated S3 API calls
+const profileImageCache = new Map();
+
+// Cache TTL in milliseconds (30 minutes)
+const CACHE_TTL = 30 * 60 * 1000;
+
+// Helper function to get cached profile image URL
+const getCachedProfileImageUrl = async (fileKey) => {
+  if (!fileKey) return null;
+
+  const cacheKey = `profile_${fileKey}`;
+  const cached = profileImageCache.get(cacheKey);
+
+  // Check if cache exists and is not expired
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log("Using cached profile image URL for:", fileKey);
+    return cached.url;
+  }
+
+  // Generate new URL and cache it
+  const { getS3Url } = require("../config/s3");
+  console.log("Generating new profile image URL for:", fileKey);
+  const url = await getS3Url(fileKey);
+
+  // Cache the URL with timestamp
+  profileImageCache.set(cacheKey, {
+    url,
+    timestamp: Date.now(),
+  });
+
+  console.log("Cached new profile image URL for:", fileKey);
+  return url;
+};
+
+// Helper function to clear cache when profile image is updated
+const clearProfileImageCache = (fileKey) => {
+  if (fileKey) {
+    const cacheKey = `profile_${fileKey}`;
+    profileImageCache.delete(cacheKey);
+    console.log("Cleared profile image cache for:", fileKey);
+  }
+};
+
+// Make cache clearing function globally available
+global.clearProfileImageCache = clearProfileImageCache;
+
+// Utility function to capitalize first letter of each word in a name
+const capitalizeName = (name) => {
+  if (!name) return name;
+  return name
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
 
 // Register a new mentor
 exports.registerMentor = async (req, res) => {
   try {
+    console.log("=== Mentor Registration Debug ===");
+    console.log("Request body:", req.body);
+    console.log("Request files:", req.files);
+    console.log("Content-Type:", req.headers["content-type"]);
+
     const {
       fullName,
       professionalTitle,
@@ -29,8 +91,28 @@ exports.registerMentor = async (req, res) => {
       existingUserId,
     } = req.body;
 
+    // Capitalize the full name
+    const capitalizedFullName = capitalizeName(fullName);
+
+    console.log("Parsed fields:", {
+      fullName: capitalizedFullName,
+      professionalTitle,
+      location,
+      bio,
+      linkedInUrl,
+      email,
+      existingUserId,
+    });
+
     // Validate required fields
-    if (!fullName || !professionalTitle || !location || !bio || !linkedInUrl) {
+    if (
+      !capitalizedFullName ||
+      !professionalTitle ||
+      !location ||
+      !bio ||
+      !linkedInUrl
+    ) {
+      console.log("Missing required fields");
       return res.status(400).json({
         message:
           "Missing required fields: fullName, professionalTitle, location, bio, linkedInUrl",
@@ -39,11 +121,14 @@ exports.registerMentor = async (req, res) => {
 
     // Validate ID verification file is uploaded
     if (!req.files?.idVerification) {
+      console.log("Missing ID verification file");
       return res.status(400).json({
         message:
           "ID verification document is required. Please upload a government ID or passport.",
       });
     }
+
+    console.log("All validations passed, proceeding with registration...");
 
     let user;
 
@@ -83,9 +168,10 @@ exports.registerMentor = async (req, res) => {
 
     // Handle file uploads
     const profileImage = req.files?.profileImage
-      ? req.files.profileImage[0].key // S3 key
+      ? req.files.profileImage[0].key || req.files.profileImage[0].filename // S3 key or local filename
       : null;
-    const idVerification = req.files.idVerification[0].key; // S3 key
+    const idVerification =
+      req.files.idVerification[0].key || req.files.idVerification[0].filename; // S3 key or local filename
 
     // Parse arrays from form data
     const expertiseArray = areasOfExpertise
@@ -121,7 +207,7 @@ exports.registerMentor = async (req, res) => {
 
     // Create mentor profile
     const mentor = new Mentor({
-      fullName,
+      fullName: capitalizedFullName,
       profileImage,
       professionalTitle,
       location,
@@ -154,7 +240,7 @@ exports.registerMentor = async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, salt);
 
       user = new User({
-        name: fullName,
+        name: capitalizedFullName,
         email,
         password: hashedPassword,
         mentorId: mentor._id,
@@ -170,9 +256,295 @@ exports.registerMentor = async (req, res) => {
       mentorId: mentor._id,
       userId: user._id,
     });
+
+    console.log("Mentor registration completed successfully");
+    console.log("Mentor ID:", mentor._id);
+    console.log("User ID:", user._id);
   } catch (err) {
     console.error("Mentor registration error:", err);
+    console.error("Error stack:", err.stack);
     res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// LinkedIn verification function
+const verifyLinkedInProfile = async (linkedInUrl) => {
+  try {
+    // Basic URL validation
+    if (!linkedInUrl.includes("linkedin.com/in/")) {
+      return { isValid: false, reason: "Invalid LinkedIn URL format" };
+    }
+
+    // Extract LinkedIn username from URL
+    const linkedInUsername = linkedInUrl
+      .split("linkedin.com/in/")[1]
+      ?.split("/")[0];
+    if (!linkedInUsername) {
+      return { isValid: false, reason: "Could not extract LinkedIn username" };
+    }
+
+    // For now, we'll do basic validation
+    // In production, you'd want to use LinkedIn API with proper authentication
+    const isValidFormat = /^[a-zA-Z0-9-]+$/.test(linkedInUsername);
+
+    return {
+      isValid: isValidFormat,
+      reason: isValidFormat
+        ? "LinkedIn profile format is valid"
+        : "Invalid LinkedIn username format",
+      username: linkedInUsername,
+    };
+  } catch (error) {
+    console.error("LinkedIn verification error:", error);
+    return { isValid: false, reason: "Error verifying LinkedIn profile" };
+  }
+};
+
+// Email verification functions
+const sendVerificationEmail = async (email, verificationToken, mentorName) => {
+  try {
+    // Create transporter with no-reply email
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER || "your-email@gmail.com",
+        pass: process.env.EMAIL_PASSWORD || "your-app-password",
+      },
+    });
+
+    // Email content
+    const verificationUrl = `${
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    }/verify-email?token=${verificationToken}`;
+
+    const mailOptions = {
+      from: `"CareerHub" <${
+        process.env.EMAIL_USER || "no-reply@careerhub.com"
+      }>`,
+      to: email,
+      subject: "Verify Your Mentor Account - CareerHub",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1e40af;">Welcome to CareerHub, ${mentorName}!</h2>
+          <p>Thank you for applying to become a mentor. To complete your verification, please click the button below:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" 
+               style="background-color: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              Verify My Account
+            </a>
+          </div>
+          <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+          <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
+          <p>This link will expire in 24 hours.</p>
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+          <p style="color: #6b7280; font-size: 12px;">
+            This is an automated email from CareerHub. Please do not reply to this email.
+            If you have questions, contact us at support@careerhub.com
+          </p>
+        </div>
+      `,
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+    console.log(`Verification email sent to ${email}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Email sending error:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Generate verification token
+const generateVerificationToken = () => {
+  return crypto.randomBytes(32).toString("hex");
+};
+
+// Apply to become a mentor with verification
+exports.applyToBecomeMentor = async (req, res) => {
+  try {
+    const {
+      fullName,
+      professionalTitle,
+      location,
+      bio,
+      areasOfExpertise,
+      skills,
+      yearsOfExperience,
+      languagesSpoken,
+      linkedInUrl,
+      personalWebsite,
+      idVerification, // Add this required field
+      hourlyRate,
+      offerFreeIntro,
+      helpAreas,
+      sessionDuration,
+      availability,
+    } = req.body;
+
+    // Verify LinkedIn profile
+    const linkedInVerification = await verifyLinkedInProfile(linkedInUrl);
+    if (!linkedInVerification.isValid) {
+      return res.status(400).json({
+        message: "LinkedIn verification failed",
+        reason: linkedInVerification.reason,
+      });
+    }
+
+    // Generate verification token
+    const verificationToken = generateVerificationToken();
+    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Create mentor with pending verification
+    const mentor = new Mentor({
+      fullName,
+      professionalTitle,
+      location,
+      bio,
+      areasOfExpertise,
+      skills,
+      yearsOfExperience,
+      languagesSpoken,
+      linkedInUrl,
+      personalWebsite,
+      idVerification, // Include the required field
+      hourlyRate,
+      offerFreeIntro,
+      helpAreas,
+      sessionDuration,
+      availability,
+      verified: false, // Will be set to true after email verification
+      verificationToken,
+      tokenExpiry,
+      linkedInVerified: true, // LinkedIn is already verified
+      emailVerified: false,
+      userId: req.user.userId, // Add user ID from auth
+      email: req.user.email, // Add email from auth
+    });
+
+    await mentor.save();
+
+    // Update the User model to mark them as a mentor and link the mentor record
+    const User = require("../models/User");
+    await User.findByIdAndUpdate(req.user.userId, {
+      isMentor: true,
+      mentorId: mentor._id,
+    });
+
+    // Send verification email
+    const emailResult = await sendVerificationEmail(
+      req.user.email,
+      verificationToken,
+      fullName
+    );
+
+    if (!emailResult.success) {
+      // If email fails, still save the mentor but notify about email issue
+      return res.status(201).json({
+        message:
+          "Mentor application submitted successfully, but verification email could not be sent",
+        mentorId: mentor._id,
+        emailError: emailResult.error,
+      });
+    }
+
+    res.status(201).json({
+      message:
+        "Mentor application submitted successfully. Please check your email to verify your account.",
+      mentorId: mentor._id,
+    });
+  } catch (error) {
+    console.error("Mentor application error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Verify email token
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    // Find mentor with this token
+    const mentor = await Mentor.findOne({
+      verificationToken: token,
+      tokenExpiry: { $gt: new Date() },
+    });
+
+    if (!mentor) {
+      return res.status(400).json({
+        message: "Invalid or expired verification token",
+      });
+    }
+
+    // Update mentor verification status
+    mentor.verified = true;
+    mentor.emailVerified = true;
+    mentor.verificationToken = undefined;
+    mentor.tokenExpiry = undefined;
+    await mentor.save();
+
+    // Update user's mentor status
+    const user = await User.findById(mentor.userId);
+    if (user) {
+      user.isMentor = true;
+      user.mentorId = mentor._id;
+      await user.save();
+    }
+
+    res.json({
+      message:
+        "Email verified successfully! Your mentor account is now active.",
+      mentorId: mentor._id,
+    });
+  } catch (error) {
+    console.error("Email verification error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Resend verification email
+exports.resendVerificationEmail = async (req, res) => {
+  try {
+    const { mentorId } = req.params;
+
+    const mentor = await Mentor.findById(mentorId);
+    if (!mentor) {
+      return res.status(404).json({ message: "Mentor not found" });
+    }
+
+    if (mentor.emailVerified) {
+      return res.status(400).json({ message: "Email is already verified" });
+    }
+
+    // Generate new verification token
+    const verificationToken = generateVerificationToken();
+    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    mentor.verificationToken = verificationToken;
+    mentor.tokenExpiry = tokenExpiry;
+    await mentor.save();
+
+    // Send new verification email
+    const emailResult = await sendVerificationEmail(
+      mentor.email || req.user.email,
+      verificationToken,
+      mentor.fullName
+    );
+
+    if (!emailResult.success) {
+      return res.status(500).json({
+        message: "Failed to send verification email",
+        error: emailResult.error,
+      });
+    }
+
+    res.json({
+      message: "Verification email sent successfully",
+    });
+  } catch (error) {
+    console.error("Resend verification error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -182,10 +554,12 @@ exports.getVerifiedMentors = async (req, res) => {
     const mentors = await Mentor.find({ verified: true });
 
     // Convert S3 keys to URLs for each mentor
-    const mentorsWithUrls = mentors.map((mentor) => ({
-      ...mentor.toObject(),
-      profileImage: getS3Url(mentor.profileImage),
-    }));
+    const mentorsWithUrls = await Promise.all(
+      mentors.map(async (mentor) => ({
+        ...mentor.toObject(),
+        profileImage: await getS3Url(mentor.profileImage),
+      }))
+    );
 
     res.json(mentorsWithUrls);
   } catch (err) {
@@ -215,9 +589,97 @@ exports.verifyMentor = async (req, res) => {
 exports.getAllMentors = async (req, res) => {
   try {
     const mentors = await Mentor.find().sort({ createdAt: -1 });
-    res.json(mentors);
+
+    // Convert S3 keys to URLs for each mentor
+    const mentorsWithUrls = await Promise.all(
+      mentors.map(async (mentor) => ({
+        ...mentor.toObject(),
+        profileImage: await getS3Url(mentor.profileImage),
+      }))
+    );
+
+    res.json(mentorsWithUrls);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Get verified mentors only
+exports.getVerifiedMentors = async (req, res) => {
+  try {
+    const mentors = await Mentor.find({ verified: true }).sort({
+      createdAt: -1,
+    });
+
+    // Convert S3 keys to URLs for each mentor
+    const mentorsWithUrls = await Promise.all(
+      mentors.map(async (mentor) => ({
+        ...mentor.toObject(),
+        profileImage: await getS3Url(mentor.profileImage),
+      }))
+    );
+
+    res.json(mentorsWithUrls);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Get mentors by help area
+exports.getMentorsByHelpArea = async (req, res) => {
+  try {
+    const { helpArea } = req.params;
+
+    console.log("=== getMentorsByHelpArea Debug ===");
+    console.log("Help area requested:", helpArea);
+
+    if (!helpArea) {
+      return res.status(400).json({
+        message: "Help area parameter is required",
+      });
+    }
+
+    // Map help area names to areas of expertise
+    const helpAreaToExpertiseMap = {
+      "Software Development": "software-development",
+      "Data Science": "data-science",
+      Business: "business",
+      Marketing: "marketing",
+      Design: "design",
+      Finance: "finance",
+      Healthcare: "healthcare",
+      Education: "education",
+    };
+
+    const expertiseArea = helpAreaToExpertiseMap[helpArea] || helpArea;
+    console.log("Mapped expertise area:", expertiseArea);
+
+    const query = {
+      $or: [
+        { helpAreas: { $in: [helpArea] } },
+        { areasOfExpertise: { $in: [expertiseArea] } },
+      ],
+      // verified: true, // Temporarily commented out for testing
+    };
+
+    console.log("Query:", JSON.stringify(query, null, 2));
+
+    const mentors = await Mentor.find(query).select(
+      "fullName professionalTitle profileImage bio areasOfExpertise skills yearsOfExperience hourlyRate offerFreeIntro sessionDuration availability rating reviews"
+    );
+
+    console.log("Found mentors:", mentors.length);
+    console.log(
+      "Mentors:",
+      mentors.map((m) => ({ name: m.fullName, expertise: m.areasOfExpertise }))
+    );
+
+    res.json(mentors);
+  } catch (error) {
+    console.error("Error fetching mentors by help area:", error);
+    res.status(500).json({
+      message: "Error fetching mentors",
+    });
   }
 };
 
@@ -406,117 +868,204 @@ exports.getMyMentorDetails = async (req, res) => {
       return res.status(404).json({ message: "User is not a mentor" });
     }
 
-    const mentor = user.mentorId;
-    console.log("Mentor data:", mentor);
+    const mentorData = user.mentorId;
+    console.log("Mentor data:", mentorData);
 
-    // Fetch real data from database
-    const mentorId = mentor._id;
+    // Generate profile image URL if it exists
+    let profileImageUrl = null;
+    if (mentorData.profileImage) {
+      const { getS3Url } = require("../config/s3");
+      profileImageUrl = await getS3Url(mentorData.profileImage);
+    }
 
-    // Get upcoming sessions (scheduled sessions in the future)
-    const upcomingSessions = await Session.find({
-      mentorId: mentorId,
-      status: "scheduled",
-      date: { $gte: new Date() },
-    })
-      .populate("menteeId", "name email")
-      .sort({ date: 1 })
-      .limit(5);
+    const response = {
+      success: true,
+      mentor: {
+        _id: mentorData._id,
+        fullName: mentorData.fullName,
+        email: user.email,
+        title: mentorData.professionalTitle,
+        industry: mentorData.areasOfExpertise?.[0] || "general",
+        experience: mentorData.yearsOfExperience,
+        bio: mentorData.bio,
+        profileImage: profileImageUrl,
+        verificationStatus: mentorData.verified ? "verified" : "pending",
+        hourlyRate: mentorData.hourlyRate || 0,
+        specialties: mentorData.areasOfExpertise || [],
+        skills: mentorData.skills || [],
+      },
+      stats: {
+        upcomingSessions: 0,
+        averageRating: 0,
+        totalEarnings: 0,
+        totalSessions: 0,
+        totalReviews: 0,
+      },
+      upcomingSessions: [],
+      recentReviews: [],
+      notifications: [],
+    };
 
-    // Get recent reviews
-    const recentReviews = await Review.find({
-      mentorId: mentorId,
-      isPublic: true,
-    })
-      .populate("menteeId", "name")
-      .populate("sessionId", "title")
-      .sort({ createdAt: -1 })
-      .limit(5);
+    console.log("Sending response:", response);
+    res.json(response);
+  } catch (error) {
+    console.error("Error fetching mentor details:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 
-    // Calculate stats
-    const totalSessions = await Session.countDocuments({ mentorId: mentorId });
-    const completedSessions = await Session.countDocuments({
-      mentorId: mentorId,
-      status: "completed",
-    });
+// Get mentee details by JWT token (for current user)
+exports.getMyMenteeDetails = async (req, res) => {
+  try {
+    // The user ID comes from the JWT token via middleware
+    const userId = req.user.userId;
 
-    // Calculate average rating
-    const reviews = await Review.find({ mentorId: mentorId });
+    console.log("Fetching mentee details for current user:", userId);
+
+    // Find the user
+    const user = await User.findById(userId);
+
+    console.log("User found:", user ? "Yes" : "No");
+    if (user) {
+      console.log("User isMentor:", user.isMentor);
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Get sessions for this mentee
+    const sessions = await Session.find({ menteeId: userId })
+      .populate("mentorId", "fullName professionalTitle profileImage")
+      .sort({ date: -1 });
+
+    // Calculate stats from real data
+    const totalSessions = sessions.length;
+    const completedSessions = sessions.filter(
+      (s) => s.status === "completed"
+    ).length;
+    const upcomingSessions = sessions.filter(
+      (s) => s.status === "scheduled" && new Date(s.date) > new Date()
+    ).length;
+
+    // Get unique mentors
+    const mentorIds = [
+      ...new Set(sessions.map((s) => s.mentorId._id.toString())),
+    ];
+    const totalMentors = mentorIds.length;
+
+    // Calculate average rating from reviews
+    const reviews = await Review.find({ menteeId: userId });
     const averageRating =
       reviews.length > 0
         ? reviews.reduce((sum, review) => sum + review.rating, 0) /
           reviews.length
         : 0;
 
-    // Calculate total earnings
-    const completedSessionsData = await Session.find({
-      mentorId: mentorId,
-      status: "completed",
-    });
-    const totalEarnings = completedSessionsData.reduce(
-      (sum, session) => sum + session.totalAmount,
-      0
+    // Calculate total spent
+    const totalSpent = sessions
+      .filter((s) => s.status === "completed")
+      .reduce((sum, session) => sum + (session.totalAmount || 0), 0);
+
+    // Format upcoming sessions
+    const formattedUpcomingSessions = sessions
+      .filter((s) => s.status === "scheduled" && new Date(s.date) > new Date())
+      .slice(0, 5)
+      .map((session) => ({
+        id: session._id,
+        title: session.title || "Career Guidance Session",
+        mentorName: session.mentorId?.fullName || "Unknown Mentor",
+        date: session.date.toLocaleDateString(),
+        time: session.date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        status: session.status,
+      }));
+
+    // Format completed sessions
+    const formattedCompletedSessions = sessions
+      .filter((s) => s.status === "completed")
+      .slice(0, 10)
+      .map((session) => ({
+        id: session._id,
+        title: session.title || "Career Guidance Session",
+        mentorName: session.mentorId?.fullName || "Unknown Mentor",
+        date: session.date.toLocaleDateString(),
+        time: session.date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        rating: 4.5, // Mock rating - would come from reviews
+      }));
+
+    // Format mentors worked with
+    const mentorsWorkedWith = await Promise.all(
+      mentorIds.map(async (mentorId) => {
+        const mentorSessions = sessions.filter(
+          (s) => s.mentorId._id.toString() === mentorId
+        );
+        const mentor = mentorSessions[0].mentorId;
+
+        return {
+          id: mentorId,
+          name: mentor.fullName,
+          title: mentor.professionalTitle,
+          profileImage: await getS3Url(mentor.profileImage),
+          sessionsCount: mentorSessions.length,
+          rating: 4.5, // Mock rating
+        };
+      })
     );
 
     const stats = {
-      upcomingSessions: upcomingSessions.length,
-      averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
-      totalEarnings: totalEarnings,
-      totalSessions: totalSessions,
-      totalReviews: reviews.length,
+      totalSessions,
+      completedSessions,
+      upcomingSessions,
+      totalMentors,
+      averageRating: Math.round(averageRating * 10) / 10,
+      totalSpent,
     };
 
-    // Format upcoming sessions for frontend
-    const formattedUpcomingSessions = upcomingSessions.map((session) => ({
-      id: session._id,
-      title: session.title,
-      menteeName: session.menteeId?.name || "Unknown",
-      date: session.date.toLocaleDateString(),
-      time: session.date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      platform: session.platform,
-      status: session.status,
-    }));
-
-    // Format recent reviews for frontend
-    const formattedRecentReviews = recentReviews.map((review) => ({
-      id: review._id,
-      reviewerName: review.menteeId?.name || "Anonymous",
-      reviewerImage: `https://randomuser.me/api/portraits/men/${Math.floor(
-        Math.random() * 100
-      )}.jpg`, // Placeholder
-      rating: review.rating,
-      comment: review.comment,
-      date: review.createdAt.toLocaleDateString(),
-    }));
+    // Generate profile image URL if it exists (using cache)
+    let profileImageUrl = null;
+    if (user.profileImage) {
+      console.log("=== getMyMenteeDetails Debug ===");
+      console.log("User ID:", userId);
+      console.log("User profileImage:", user.profileImage);
+      profileImageUrl = await getCachedProfileImageUrl(user.profileImage);
+      console.log(
+        "Final profile image URL:",
+        profileImageUrl ? "Generated/Cached" : "None"
+      );
+      console.log("=================================");
+    }
 
     const responseData = {
       success: true,
-      mentor: {
-        _id: mentor._id,
-        fullName: mentor.fullName,
-        email: user ? user.email : "mentor@example.com", // Use user email if available
-        title: mentor.professionalTitle,
-        industry: mentor.areasOfExpertise?.[0] || "Technology",
-        experience: mentor.yearsOfExperience,
-        bio: mentor.bio,
-        profileImage: getS3Url(mentor.profileImage), // Convert S3 key to URL
-        verificationStatus: mentor.verified ? "verified" : "pending",
-        hourlyRate: mentor.hourlyRate,
-        specialties: mentor.areasOfExpertise,
-        skills: mentor.skills,
+      mentee: {
+        _id: user._id,
+        fullName: user.fullName || user.email.split("@")[0],
+        email: user.email,
+        profileImage: profileImageUrl,
+        joinDate: user.createdAt,
+        preferences: [
+          "Career Development",
+          "Interview Preparation",
+          "Skill Building",
+        ], // Mock preferences
       },
       stats,
       upcomingSessions: formattedUpcomingSessions,
-      recentReviews: formattedRecentReviews,
+      completedSessions: formattedCompletedSessions,
+      mentorsWorkedWith,
       notifications: [], // Will be implemented later
     };
 
-    console.log("Sending response:", responseData);
+    console.log("Sending mentee response:", responseData);
     res.json(responseData);
   } catch (error) {
-    console.error("Error fetching mentor details:", error);
+    console.error("Error fetching mentee details:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -524,11 +1073,16 @@ exports.getMyMentorDetails = async (req, res) => {
 // Update mentor profile image
 exports.updateProfileImage = async (req, res) => {
   try {
-    console.log("updateProfileImage called");
+    console.log("=== updateProfileImage called ===");
+    console.log("Request method:", req.method);
+    console.log("Request URL:", req.url);
     console.log("Request user:", req.user);
     console.log("Request file:", req.file);
     console.log("Request files:", req.files);
     console.log("Request headers:", req.headers);
+    console.log("Request body keys:", Object.keys(req.body || {}));
+    console.log("Content-Type:", req.get("Content-Type"));
+    console.log("=================================");
 
     const userId = req.user.userId;
     console.log("User ID:", userId);
@@ -548,7 +1102,7 @@ exports.updateProfileImage = async (req, res) => {
     }
 
     console.log("File details:", {
-      filename: req.file.key, // S3 key
+      filename: req.file.filename || req.file.key, // Local filename or S3 key
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
@@ -557,25 +1111,27 @@ exports.updateProfileImage = async (req, res) => {
 
     const mentor = user.mentorId;
 
-    // Delete old profile image from S3 if it exists
+    // Delete old profile image if it exists
     if (mentor.profileImage) {
       const oldFileKey = mentor.profileImage.replace(/^https:\/\/[^\/]+\//, "");
       await deleteFileFromS3(oldFileKey);
     }
 
-    // Store the S3 key in the database
-    const s3Key = req.file.key;
-    mentor.profileImage = s3Key;
+    // Store the file key/filename in the database
+    const fileKey = req.file.filename || req.file.key; // Use filename for local, key for S3
+    mentor.profileImage = fileKey;
     await mentor.save();
     console.log("Mentor profile image updated successfully");
 
-    // Get the full S3 URL for the frontend
-    const s3Url = getS3Url(s3Key);
+    // Get the full URL for the frontend
+    console.log("File key:", fileKey);
+    const fileUrl = await getS3Url(fileKey);
+    console.log("File URL:", fileUrl);
 
     res.json({
       success: true,
       message: "Profile image updated successfully",
-      profileImage: s3Url, // Return the full S3 URL
+      profileImage: fileUrl, // Return the full URL
     });
   } catch (error) {
     console.error("Error updating profile image:", error);

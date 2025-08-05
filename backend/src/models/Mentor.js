@@ -20,6 +20,14 @@ const mentorSchema = new mongoose.Schema(
     sessionDuration: { type: String, required: true },
     availability: [{ type: String }], // Changed to array of strings
     verified: { type: Boolean, default: false },
+
+    // Verification fields
+    linkedInVerified: { type: Boolean, default: false },
+    emailVerified: { type: Boolean, default: false },
+    verificationToken: { type: String },
+    tokenExpiry: { type: Date },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    email: { type: String },
   },
   { timestamps: true }
 );
