@@ -5,7 +5,7 @@ import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon } from "lucide-react";
 export const MentorApplication = () => {
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -84,6 +84,7 @@ export const MentorApplication = () => {
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      console.log("File uploaded:", file.name, file.size, file.type);
       updateFormData("idVerification", file);
     }
   };
@@ -173,23 +174,44 @@ export const MentorApplication = () => {
 
       // Add file if uploaded
       if (formData.idVerification) {
+        console.log("Adding file to FormData:", formData.idVerification);
         formDataToSend.append("idVerification", formData.idVerification);
+      } else {
+        console.log("No ID verification file found in formData");
       }
+
+      console.log("=== Frontend Debug ===");
+      console.log("Form data being sent:", {
+        fullName: formData.fullName,
+        professionalTitle: formData.professionalTitle,
+        location: formData.location,
+        bio: formData.bio,
+        linkedInUrl: formData.linkedInUrl,
+        hasIdVerification: !!formData.idVerification,
+        idVerificationFile: formData.idVerification,
+        isLoggedIn,
+      });
 
       const response = await fetch("/api/mentors/register", {
         method: "POST",
         body: formDataToSend,
       });
 
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+
       const data = await response.json();
+      console.log("Response data:", data);
 
       if (response.ok) {
         setStep(step + 1);
         window.scrollTo(0, 0);
       } else {
+        console.error("Server error:", data);
         setError(data.message || "Failed to submit application");
       }
     } catch (err) {
+      console.error("Network error:", err);
       setError("Network error. Please try again.");
     } finally {
       setIsSubmitting(false);

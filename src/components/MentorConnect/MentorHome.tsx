@@ -461,7 +461,7 @@ export const MentorHome = () => {
       id: 1,
       name: "Software Development",
       count: mentors.filter((mentor) => categorizeMentor(mentor) === 1).length,
-      color: "bg-blue-500",
+      color: "bg-mariner",
       textColor: "text-white",
       iconColor: "text-white",
       description: "Learn backend & frontend technologies",
@@ -471,7 +471,7 @@ export const MentorHome = () => {
       id: 2,
       name: "Data Science",
       count: mentors.filter((mentor) => categorizeMentor(mentor) === 2).length,
-      color: "bg-purple-500",
+      color: "bg-royal-blue",
       textColor: "text-white",
       iconColor: "text-white",
       description: "Master analytics & machine learning",
@@ -481,7 +481,7 @@ export const MentorHome = () => {
       id: 3,
       name: "Business",
       count: mentors.filter((mentor) => categorizeMentor(mentor) === 3).length,
-      color: "bg-green-500",
+      color: "bg-lynch",
       textColor: "text-white",
       iconColor: "text-white",
       description: "Strategy, management & leadership",
@@ -491,7 +491,7 @@ export const MentorHome = () => {
       id: 4,
       name: "Marketing",
       count: mentors.filter((mentor) => categorizeMentor(mentor) === 4).length,
-      color: "bg-red-500",
+      color: "bg-mariner",
       textColor: "text-white",
       iconColor: "text-white",
       description: "Growth, SEO & content strategy",
@@ -501,7 +501,7 @@ export const MentorHome = () => {
       id: 5,
       name: "Design",
       count: mentors.filter((mentor) => categorizeMentor(mentor) === 5).length,
-      color: "bg-yellow-500",
+      color: "bg-royal-blue",
       textColor: "text-white",
       iconColor: "text-white",
       description: "UX/UI & product design",
@@ -511,7 +511,7 @@ export const MentorHome = () => {
       id: 6,
       name: "Product Management",
       count: mentors.filter((mentor) => categorizeMentor(mentor) === 6).length,
-      color: "bg-indigo-500",
+      color: "bg-lynch",
       textColor: "text-white",
       iconColor: "text-white",
       description: "Product strategy & roadmapping",
@@ -539,9 +539,9 @@ export const MentorHome = () => {
   // Handle become a mentor click
   const handleBecomeMentor = () => {
     if (isLoggedIn) {
-      navigate("/mentor-connect/apply");
+      navigate("/mentor-application");
     } else {
-      navigate("/mentor-connect/signin", {
+      navigate("/mentor-signin", {
         state: { wantsToBecomeMentor: true },
       });
     }
@@ -550,11 +550,11 @@ export const MentorHome = () => {
   // Handle mentor action (become mentor or go to dashboard)
   const handleMentorAction = () => {
     if (isLoggedIn && user?.isMentor) {
-      navigate("/mentor-connect/dashboard");
+      navigate("/dashboard");
     } else if (isLoggedIn) {
-      navigate("/mentor-connect/apply");
+      navigate("/mentor-application");
     } else {
-      navigate("/mentor-connect/signin", {
+      navigate("/mentor-signin", {
         state: { wantsToBecomeMentor: true },
       });
     }
@@ -567,19 +567,19 @@ export const MentorHome = () => {
   const getCategoryGradient = (id: number) => {
     switch (id) {
       case 1:
-        return "bg-gradient-to-br from-blue-100 via-blue-200 to-blue-300";
+        return "bg-gradient-to-br from-sail via-mariner to-mariner";
       case 2:
-        return "bg-gradient-to-br from-purple-100 via-purple-200 to-purple-300";
+        return "bg-gradient-to-br from-sail via-royal-blue to-royal-blue";
       case 3:
-        return "bg-gradient-to-br from-emerald-100 via-emerald-200 to-emerald-300";
+        return "bg-gradient-to-br from-sail via-lynch to-lynch";
       case 4:
-        return "bg-gradient-to-br from-rose-100 via-rose-200 to-rose-300";
+        return "bg-gradient-to-br from-sail via-mariner to-mariner";
       case 5:
-        return "bg-gradient-to-br from-amber-100 via-amber-200 to-amber-300";
+        return "bg-gradient-to-br from-sail via-royal-blue to-royal-blue";
       case 6:
-        return "bg-gradient-to-br from-indigo-100 via-indigo-200 to-indigo-300";
+        return "bg-gradient-to-br from-sail via-lynch to-lynch";
       default:
-        return "bg-gradient-to-br from-slate-100 to-slate-200";
+        return "bg-gradient-to-br from-sail to-sail";
     }
   };
 
@@ -596,7 +596,7 @@ export const MentorHome = () => {
             alt="Mentor and mentee collaborating"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-blue-900 opacity-75"></div>
+          <div className="absolute inset-0 bg-royal-blue opacity-75"></div>
         </div>
         {/* Background Elements - keep these for visual interest */}
 
@@ -605,7 +605,7 @@ export const MentorHome = () => {
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
               Find the perfect mentor to accelerate your career
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-10 leading-relaxed">
+            <p className="text-xl md:text-2xl text-sail mb-10 leading-relaxed">
               Connect with industry experts for personalized guidance, career
               advice, and skill development.
             </p>
@@ -613,14 +613,14 @@ export const MentorHome = () => {
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <button
                 onClick={() => scrollToSection(mentorsRef)}
-                className="px-6 py-3 bg-white text-blue-600 font-semibold rounded-md hover:bg-blue-50 transition-colors flex items-center justify-center"
+                className="px-6 py-3 bg-white text-royal-blue font-semibold rounded-md hover:bg-sail transition-colors flex items-center justify-center"
               >
                 <UserIcon size={18} className="mr-2" />
                 Explore Mentors
               </button>
               <button
                 onClick={() => scrollToSection(categoriesRef)}
-                className="px-6 py-3 bg-blue-700 text-white font-semibold rounded-md hover:bg-blue-800 transition-colors flex items-center justify-center"
+                className="px-6 py-3 bg-mariner text-white font-semibold rounded-md hover:bg-royal-blue transition-colors flex items-center justify-center"
               >
                 <FilterIcon size={18} className="mr-2" />
                 Browse Categories
@@ -629,7 +629,7 @@ export const MentorHome = () => {
             <div className="mt-6 flex items-center">
               <button
                 onClick={handleMentorAction}
-                className="text-white underline hover:text-blue-200 flex items-center"
+                className="text-white underline hover:text-sail flex items-center"
               >
                 {isLoggedIn && user?.isMentor ? (
                   <SettingsIcon size={16} className="mr-2" />
@@ -653,8 +653,8 @@ export const MentorHome = () => {
               Explore Categories
             </h2>
             <Link
-              to="/mentor-connect/categories"
-              className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+              to="/all-categories"
+              className="text-mariner hover:text-royal-blue font-medium flex items-center"
             >
               View all categories
               <ChevronDownIcon size={16} className="ml-1" />
@@ -664,53 +664,36 @@ export const MentorHome = () => {
             {categories.map((category) => (
               <div
                 key={category.id}
-                className={`relative rounded-xl p-6 cursor-pointer transition-all duration-300 hover:scale-105 overflow-hidden ${getCategoryGradient(
-                  category.id
-                )}`}
+                className={`relative rounded-lg p-6 cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 bg-[#C0D7FB] hover:border-mariner overflow-hidden`}
                 onClick={() => handleCategoryClick(category)}
               >
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10">
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      backgroundImage: `radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.2) 0%, transparent 50%)`,
-                      backgroundSize: "100% 100%",
-                    }}
-                  ></div>
-                </div>
-
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 rounded-lg bg-white bg-opacity-60 backdrop-blur-sm flex items-center justify-center border border-gray-200 border-opacity-50 shadow-sm">
-                      <div className="text-gray-700">{category.icon}</div>
+                    <div
+                      className={`w-10 h-10 rounded-lg ${category.color} flex items-center justify-center`}
+                    >
+                      <div className="text-white">{category.icon}</div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-2xl font-bold text-gray-800">
-                        {category.count}
-                      </span>
-                      <p className="text-sm text-gray-600">mentors</p>
-                    </div>
+                    <span className="text-xs font-medium text-gray-400">
+                      {category.count} mentors
+                    </span>
                   </div>
-                  <h3 className="font-bold text-gray-800 text-lg mb-2">
+                  <h3 className="font-semibold text-gray-800 text-base mb-2">
                     {category.name}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-gray-500 mb-4">
                     {category.description}
                   </p>
 
-                  {/* Popular Skills - Always Visible */}
+                  {/* Popular Skills - Minimal */}
                   <div className="mb-4">
-                    <p className="text-xs text-gray-600 mb-2">
-                      Popular skills:
-                    </p>
                     <div className="flex flex-wrap gap-1">
                       {(categoryPopularSkills[category.id] || [])
-                        .slice(0, 3)
+                        .slice(0, 2)
                         .map((skill: string, index: number) => (
                           <span
                             key={index}
-                            className="text-xs bg-white bg-opacity-80 backdrop-blur-sm px-2 py-1 rounded-full text-gray-700 border border-gray-200 border-opacity-50 shadow-sm"
+                            className="text-xs bg-gray-50 px-2 py-1 rounded text-gray-600"
                           >
                             {skill}
                           </span>
@@ -722,9 +705,9 @@ export const MentorHome = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/mentor-connect/categories/${category.id}`);
+                      navigate(`/all-categories?category=${category.id}`);
                     }}
-                    className="w-full mt-3 text-sm text-gray-700 hover:text-gray-900 font-medium transition-all duration-200"
+                    className="w-full mt-3 text-sm text-mariner hover:text-royal-blue font-medium transition-all duration-200"
                   >
                     View mentors →
                   </button>

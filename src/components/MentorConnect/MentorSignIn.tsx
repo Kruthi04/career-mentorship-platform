@@ -1,37 +1,105 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { MailIcon, LockIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import {
+  MailIcon,
+  LockIcon,
+  EyeIcon,
+  EyeOffIcon,
+  UserIcon,
+  ShieldIcon,
+  ArrowRightIcon,
+  CheckCircleIcon,
+  SparklesIcon,
+} from "lucide-react";
+import sessionManager from "../../utils/sessionManager";
+import ApiClient from "../../utils/apiClient";
 
 export const MentorSignIn = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Check if user came from mentor application
-  const wantsToBecomeMentor = location.state?.wantsToBecomeMentor || false;
+  // Check if user wants to become a mentor
+  const wantsToBecomeMentor = location.state?.wantsToBecomeMentor;
+
+  // Test API client on component mount
+  useEffect(() => {
+    const testApiClient = async () => {
+      try {
+        console.log("Testing API client connection...");
+        setDebugInfo("Testing connection to backend...");
+
+        const response = await ApiClient.get("/auth/session");
+        console.log("API client test successful:", response.status);
+        setDebugInfo("Backend connection successful");
+
+        // Clear debug info after 3 seconds
+        setTimeout(() => setDebugInfo(""), 3000);
+      } catch (error) {
+        console.error("API client test failed:", error);
+        setDebugInfo(
+          `Connection test failed: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
+
+        // Clear debug info after 5 seconds
+        setTimeout(() => setDebugInfo(""), 5000);
+      }
+    };
+    testApiClient();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     setError("");
+    setDebugInfo("Attempting to login...");
+
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (res.ok) {
+      console.log("Attempting to login with email:", email);
+
+      // Test backend connection first
+      try {
+        const testResponse = await fetch(
+          "http://localhost:5050/api/auth/session"
+        );
+        console.log("Backend test response:", testResponse.status);
+        if (!testResponse.ok) {
+          throw new Error(`Backend test failed: ${testResponse.status}`);
+        }
+      } catch (testError) {
+        console.error("Backend connection test failed:", testError);
+        setError(
+          "Cannot connect to server. Please ensure the backend is running on port 5050."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await ApiClient.post("/auth/login", { email, password });
+      console.log("Login response status:", response.status);
+
+      const data = await response.json();
+      console.log("Login response data:", data);
+
+      if (response.ok) {
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.setItem("token", data.token);
 
+        // Start session management
+        sessionManager.startSession();
+
         // Navigate based on user type and intent
         if (data.user.isMentor) {
-          navigate("/mentor-connect/dashboard");
+          navigate("/mentor-dashboard");
         } else if (wantsToBecomeMentor) {
-          navigate("/mentor-connect/apply");
+          navigate("/mentor-application");
         } else {
           navigate("/");
         }
@@ -39,125 +107,160 @@ export const MentorSignIn = () => {
         setError(data.message || "Login failed");
       }
     } catch (err) {
-      setError("Network error");
+      console.error("Login error:", err);
+      if (err instanceof Error) {
+        setError(`Network error: ${err.message}`);
+      } else {
+        setError("Network error. Please check your connection and try again.");
+      }
+    } finally {
+      setIsLoading(false);
+      setDebugInfo("");
     }
   };
+
   return (
-    <div className="w-full bg-gray-50 py-12 md:py-16">
-      <div className="container mx-auto px-4">
-        <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-6 md:p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-gray-800">Welcome Back</h1>
-              <p className="text-gray-600 mt-2">
-                Sign in to your MentorConnect account
-              </p>
-              {wantsToBecomeMentor && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-blue-800">
-                    After signing in, you'll be redirected to the mentor
-                    application form.
-                  </p>
+    <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-blue-50 to-white"></div>
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-blue-100 rounded-full opacity-30 blur-3xl"></div>
+        <div className="absolute top-1/4 left-0 w-32 h-32 bg-blue-200 rounded-full opacity-20 blur-2xl"></div>
+      </div>
+
+      <div className="max-w-md w-full space-y-8 relative z-10">
+        {/* Header */}
+        <div className="text-center">
+          <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+            <SparklesIcon className="h-8 w-8 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome Back
+          </h2>
+          <p className="text-gray-600">Sign in to your account to continue</p>
+        </div>
+
+        {/* Debug Info */}
+        {debugInfo && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">{debugInfo}</p>
+          </div>
+        )}
+
+        {/* Mentor Notice */}
+        {wantsToBecomeMentor && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start">
+              <CheckCircleIcon className="h-5 w-5 text-blue-600 mr-3 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-blue-900 mb-1">
+                  Become a Mentor
+                </h3>
+                <p className="text-sm text-blue-800">
+                  Complete your mentor application to start helping others grow
+                  their careers.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Form */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <MailIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <LockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex">
+                  <ShieldIcon className="h-5 w-5 text-red-400 mr-3 mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-medium text-red-800">
+                      Sign In Error
+                    </h3>
+                    <p className="text-sm text-red-700 mt-1">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {isLoading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Signing In...
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  Sign In
+                  <ArrowRightIcon className="ml-2 h-4 w-4" />
                 </div>
               )}
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <MailIcon size={18} className="text-gray-400" />
-                    </div>
-                    <input
-                      type="email"
-                      id="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="john@example.com"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <LockIcon size={18} className="text-gray-400" />
-                    </div>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      id="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="••••••••"
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOffIcon size={18} className="text-gray-400" />
-                      ) : (
-                        <EyeIcon size={18} className="text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <input
-                      id="remember-me"
-                      type="checkbox"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label
-                      htmlFor="remember-me"
-                      className="ml-2 block text-sm text-gray-700"
-                    >
-                      Remember me
-                    </label>
-                  </div>
-                  <a href="#" className="text-sm text-blue-600 hover:underline">
-                    Forgot password?
-                  </a>
-                </div>
-                {error && (
-                  <div className="text-red-600 text-sm mt-2">{error}</div>
-                )}
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mt-6"
+            </button>
+          </form>
+
+          {/* Sign Up Link */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              Don't have an account?{" "}
+              <Link
+                to="/mentor-signup"
+                className="text-blue-600 hover:text-blue-700 font-semibold"
               >
-                Sign In
-              </button>
-            </form>
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Don't have an account?{" "}
-                <Link
-                  to="/mentor-connect/signup"
-                  className="text-blue-600 hover:underline"
-                >
-                  Sign Up
-                </Link>
-              </p>
-            </div>
+                Create one now
+              </Link>
+            </p>
           </div>
         </div>
       </div>

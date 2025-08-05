@@ -14,6 +14,7 @@ import {
   MessageCircleIcon,
   BellIcon,
 } from "lucide-react";
+import sessionManager from "../utils/sessionManager";
 
 export const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -74,9 +75,7 @@ export const Navigation = () => {
   }, [location.pathname]);
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    window.location.reload();
+    sessionManager.logout();
   };
 
   const getCurrentPlatform = () => {
@@ -101,11 +100,11 @@ export const Navigation = () => {
 
   const handleBecomeMentor = () => {
     if (user?.isMentor) {
-      navigate("/mentor-connect/dashboard");
+      navigate("/dashboard");
     } else if (user) {
-      navigate("/mentor-connect/apply");
+      navigate("/mentor-application");
     } else {
-      navigate("/mentor-connect/signin", {
+      navigate("/mentor-signin", {
         state: { wantsToBecomeMentor: true },
       });
     }
@@ -173,13 +172,13 @@ export const Navigation = () => {
             ) : (
               <>
                 <Link
-                  to="/mentor-connect/signin"
+                  to="/mentor-signin"
                   className="text-blue-600 hover:text-blue-700 transition-colors text-sm"
                 >
                   Sign In
                 </Link>
                 <Link
-                  to="/mentor-connect/signup"
+                  to="/mentor-signup"
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
                 >
                   Sign Up
@@ -388,23 +387,25 @@ export const Navigation = () => {
               {/* Divider */}
               <div className="border-t border-gray-200 my-3"></div>
 
+              {/* Dashboard for all logged-in users */}
+              {user && (
+                <Link
+                  to="/dashboard"
+                  onClick={closeMenu}
+                  className={`block px-4 py-3 rounded-md font-medium transition-colors ${
+                    isActive("/dashboard") || isActive("/mentor-dashboard")
+                      ? "bg-green-50 text-green-700"
+                      : "text-gray-700 hover:bg-green-50"
+                  }`}
+                >
+                  <SettingsIcon size={20} className="inline mr-3" /> Dashboard
+                </Link>
+              )}
+
               {/* MentorConnect specific */}
               {getCurrentPlatform() === "mentor-connect" && (
                 <>
-                  {user?.isMentor ? (
-                    <Link
-                      to="/mentor-connect/dashboard"
-                      onClick={closeMenu}
-                      className={`block px-4 py-3 rounded-md font-medium transition-colors ${
-                        isActive("/mentor-connect/dashboard")
-                          ? "bg-green-50 text-green-700"
-                          : "text-gray-700 hover:bg-green-50"
-                      }`}
-                    >
-                      <SettingsIcon size={20} className="inline mr-3" />{" "}
-                      Dashboard
-                    </Link>
-                  ) : (
+                  {!user?.isMentor && (
                     <button
                       onClick={() => {
                         closeMenu();
@@ -455,14 +456,14 @@ export const Navigation = () => {
                 ) : (
                   <>
                     <Link
-                      to="/mentor-connect/signin"
+                      to="/mentor-signin"
                       onClick={closeMenu}
                       className="block px-4 py-3 rounded-md font-medium text-blue-600 hover:bg-blue-50 transition-colors"
                     >
                       <UserIcon size={20} className="inline mr-3" /> Sign In
                     </Link>
                     <Link
-                      to="/mentor-connect/signup"
+                      to="/mentor-signup"
                       onClick={closeMenu}
                       className="block px-4 py-3 rounded-md font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                     >

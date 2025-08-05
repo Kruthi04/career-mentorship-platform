@@ -1,0 +1,256 @@
+/* Custom Color Theme - Sail, Mariner, Royal Blue, Lynch */
+
+:root {
+  /* Primary Colors */
+  --color-sail: #c0d7fb;
+  --color-mariner: #1e3a8a;
+  --color-royal-blue: #1e40af;
+  --color-lynch: #64748b;
+
+  /* Color Variations */
+  --color-sail-light: #e0edff;
+  --color-sail-dark: #a8c7f0;
+  --color-mariner-light: #3b82f6;
+  --color-mariner-dark: #1e3a8a;
+  --color-royal-blue-light: #2563eb;
+  --color-royal-blue-dark: #1e40af;
+  --color-lynch-light: #94a3b8;
+  --color-lynch-dark: #475569;
+
+  /* Semantic Colors */
+  --color-primary: var(--color-mariner);
+  --color-primary-light: var(--color-mariner-light);
+  --color-primary-dark: var(--color-mariner-dark);
+
+  --color-secondary: var(--color-sail);
+  --color-secondary-light: var(--color-sail-light);
+  --color-secondary-dark: var(--color-sail-dark);
+
+  --color-accent: var(--color-royal-blue);
+  --color-accent-light: var(--color-royal-blue-light);
+  --color-accent-dark: var(--color-royal-blue-dark);
+
+  --color-neutral: var(--color-lynch);
+  --color-neutral-light: var(--color-lynch-light);
+  --color-neutral-dark: var(--color-lynch-dark);
+
+  /* Background Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: var(--color-sail);
+  --bg-tertiary: #f8fafc;
+
+  /* Text Colors */
+  --text-primary: #1f2937;
+  --text-secondary: var(--color-mariner);
+  --text-muted: var(--color-lynch);
+  --text-light: #ffffff;
+
+  /* Border Colors */
+  --border-primary: #e5e7eb;
+  --border-secondary: var(--color-sail);
+  --border-accent: var(--color-mariner);
+
+  /* Shadow Colors */
+  --shadow-light: rgba(30, 58, 138, 0.1);
+  --shadow-medium: rgba(30, 58, 138, 0.2);
+  --shadow-dark: rgba(30, 58, 138, 0.3);
+}
+
+/* Utility Classes for Custom Colors */
+.bg-sail {
+  background-color: var(--color-sail);
+}
+.bg-mariner {
+  background-color: var(--color-mariner);
+}
+.bg-royal-blue {
+  background-color: var(--color-royal-blue);
+}
+.bg-lynch {
+  background-color: var(--color-lynch);
+}
+
+.text-sail {
+  color: var(--color-sail);
+}
+.text-mariner {
+  color: var(--color-mariner);
+}
+.text-royal-blue {
+  color: var(--color-royal-blue);
+}
+.text-lynch {
+  color: var(--color-lynch);
+}
+
+.border-sail {
+  border-color: var(--color-sail);
+}
+.border-mariner {
+  border-color: var(--color-mariner);
+}
+.border-royal-blue {
+  border-color: var(--color-royal-blue);
+}
+.border-lynch {
+  border-color: var(--color-lynch);
+}
+
+/* Hover States */
+.hover\:bg-sail:hover {
+  background-color: var(--color-sail);
+}
+.hover\:bg-mariner:hover {
+  background-color: var(--color-mariner);
+}
+.hover\:bg-royal-blue:hover {
+  background-color: var(--color-royal-blue);
+}
+.hover\:bg-lynch:hover {
+  background-color: var(--color-lynch);
+}
+
+.hover\:text-sail:hover {
+  color: var(--color-sail);
+}
+.hover\:text-mariner:hover {
+  color: var(--color-mariner);
+}
+.hover\:text-royal-blue:hover {
+  color: var(--color-royal-blue);
+}
+.hover\:text-lynch:hover {
+  color: var(--color-lynch);
+}
+
+.hover\:border-sail:hover {
+  border-color: var(--color-sail);
+}
+.hover\:border-mariner:hover {
+  border-color: var(--color-mariner);
+}
+.hover\:border-royal-blue:hover {
+  border-color: var(--color-royal-blue);
+}
+.hover\:border-lynch:hover {
+  border-color: var(--color-lynch);
+}
+
+/* Focus States */
+.focus\:ring-sail:focus {
+  box-shadow: 0 0 0 3px rgba(192, 215, 251, 0.3);
+}
+.focus\:ring-mariner:focus {
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.3);
+}
+.focus\:ring-royal-blue:focus {
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.3);
+}
+.focus\:ring-lynch:focus {
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.3);
+}
+
+/* Gradient Classes */
+.gradient-sail-mariner {
+  background: linear-gradient(
+    135deg,
+    var(--color-sail) 0%,
+    var(--color-mariner) 100%
+  );
+}
+
+.gradient-mariner-royal {
+  background: linear-gradient(
+    135deg,
+    var(--color-mariner) 0%,
+    var(--color-royal-blue) 100%
+  );
+}
+
+.gradient-sail-royal {
+  background: linear-gradient(
+    135deg,
+    var(--color-sail) 0%,
+    var(--color-royal-blue) 100%
+  );
+}
+
+/* Card Styles with Custom Colors */
+.card-sail {
+  background: var(--color-sail);
+  border: 1px solid var(--color-sail-dark);
+}
+
+.card-mariner {
+  background: var(--color-mariner);
+  color: var(--text-light);
+}
+
+.card-royal-blue {
+  background: var(--color-royal-blue);
+  color: var(--text-light);
+}
+
+.card-lynch {
+  background: var(--color-lynch);
+  color: var(--text-light);
+}
+
+/* Button Styles with Custom Colors */
+.btn-sail {
+  background: var(--color-sail);
+  color: var(--color-mariner);
+  border: 1px solid var(--color-mariner);
+}
+
+.btn-sail:hover {
+  background: var(--color-sail-dark);
+}
+
+.btn-mariner {
+  background: var(--color-mariner);
+  color: var(--text-light);
+}
+
+.btn-mariner:hover {
+  background: var(--color-mariner-dark);
+}
+
+.btn-royal-blue {
+  background: var(--color-royal-blue);
+  color: var(--text-light);
+}
+
+.btn-royal-blue:hover {
+  background: var(--color-royal-blue-dark);
+}
+
+.btn-lynch {
+  background: var(--color-lynch);
+  color: var(--text-light);
+}
+
+.btn-lynch:hover {
+  background: var(--color-lynch-dark);
+}
+
+/* Form Styles with Custom Colors */
+.form-input-sail:focus {
+  border-color: var(--color-sail);
+  box-shadow: 0 0 0 3px rgba(192, 215, 251, 0.3);
+}
+
+.form-input-mariner:focus {
+  border-color: var(--color-mariner);
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.3);
+}
+
+.form-input-royal-blue:focus {
+  border-color: var(--color-royal-blue);
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.3);
+}
+
+.form-input-lynch:focus {
+  border-color: var(--color-lynch);
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.3);
+}
