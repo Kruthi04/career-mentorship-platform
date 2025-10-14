@@ -65,4 +65,3 @@ If you're still seeing a blank page:
 - ✅ Error handling
 
 The search implementation is complete and functional! You just need to decide whether to set up Atlas Search for enhanced functionality.
-
