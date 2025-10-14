@@ -1,7 +1,19 @@
 import sessionManager from './sessionManager';
 
 class ApiClient {
-  private baseURL: string = 'http://localhost:5050/api';
+  private baseURL: string;
+
+  constructor() {
+    // Use environment variable for backend URL, fallback to localhost for development
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5050/api';
+    
+    // If no environment variable is set, use localhost for development
+    if (!import.meta.env.VITE_API_BASE_URL) {
+      console.log('Using localhost backend URL for development');
+    } else {
+      console.log('Using production backend URL:', import.meta.env.VITE_API_BASE_URL);
+    }
+  }
 
   // Make API request with session handling
   async request(endpoint: string, options: RequestInit = {}): Promise<Response> {

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import {
   FileTextIcon,
@@ -36,9 +35,21 @@ interface Mentor {
 }
 
 export const ResumeReview = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState("");
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      // Store the current path for redirect after login
+      localStorage.setItem("redirectAfterLogin", "/career-boost/resume-review");
+      navigate("/login");
+      return;
+    }
+  }, [navigate]);
 
   const [resumeLink, setResumeLink] = useState("");
 
@@ -1097,16 +1108,10 @@ export const ResumeReview = () => {
                   </p>
                 </div>
 
-                <div className="flex justify-center space-x-4">
-                  <button
-                    onClick={resetForm}
-                    className="px-6 py-2 bg-mariner text-white rounded-md hover:bg-royal-blue"
-                  >
-                    Submit Another Review
-                  </button>
+                <div className="flex justify-center">
                   <Link
                     to="/dashboard"
-                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                    className="px-6 py-2 bg-mariner text-white rounded-md hover:bg-royal-blue"
                   >
                     Go to Dashboard
                   </Link>

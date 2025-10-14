@@ -14,6 +14,7 @@ import { ResumeReview } from "./components/CareerBoost/ResumeReview";
 
 // Mentor Connect Components
 import { MentorHome } from "./components/MentorConnect/MentorHome";
+import { TestMentors } from "./components/TestMentors";
 import { MentorSignIn } from "./components/MentorConnect/MentorSignIn";
 import { MentorSignUp } from "./components/MentorConnect/MentorSignUp";
 import { Dashboard } from "./components/MentorConnect/Dashboard";
@@ -27,6 +28,12 @@ import { LinkedInCallback } from "./components/MentorConnect/LinkedInCallback";
 
 // Insight Board Components
 import { InsightHome } from "./components/InsightBoard/InsightHome";
+
+// Auth Components
+import { Login } from "./components/Login";
+
+// Search Components
+import { SearchPage } from "./components/Search/SearchPage";
 
 // Dashboard Wrapper Component
 const DashboardRouter = () => {
@@ -132,6 +139,9 @@ function App() {
           />
           <Route path="/career-boost/get-referral" element={<GetReferral />} />
 
+          {/* Auth Routes */}
+          <Route path="/login" element={<Login />} />
+
           {/* Mentor Connect Routes */}
           <Route path="/mentor-connect" element={<MentorHome />} />
           <Route path="/mentor-signin" element={<MentorSignIn />} />
@@ -144,6 +154,9 @@ function App() {
           <Route path="/mentee-dashboard" element={<MenteeDashboard />} />
           <Route path="/mentor-pending" element={<MentorPending />} />
           <Route path="/linkedin-callback" element={<LinkedInCallback />} />
+
+          {/* Search Routes */}
+          <Route path="/search" element={<SearchPage />} />
 
           {/* Insight Board Routes */}
           <Route path="/insight-board" element={<InsightHome />} />
@@ -159,6 +172,7 @@ function App() {
               </div>
             }
           />
+          <Route path="/test-mentors" element={<TestMentors />} />
         </Routes>
         <Footer />
       </div>

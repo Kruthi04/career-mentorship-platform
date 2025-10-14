@@ -85,40 +85,29 @@ export const MentorSignUp = () => {
     }
   };
 
-  // Initialize LinkedIn verification with Phyllo
-  const initiateLinkedInVerification = async (
-    userId: string,
-    linkedInUrl: string
-  ) => {
+  // Initialize LinkedIn verification with OAuth
+  const initiateLinkedInVerification = async (userId: string) => {
     try {
-      console.log("Initiating LinkedIn verification with Phyllo...");
+      console.log("Initiating LinkedIn verification with OAuth...");
 
-      const response = await fetch("/api/phyllo/linkedin/initiate", {
-        method: "POST",
+      const response = await fetch(`/api/linkedin/auth-url/${userId}`, {
+        method: "GET",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({
-          userId,
-          linkedInUrl,
-          userData: {
-            name,
-            email,
-          },
-        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        console.log("LinkedIn verification initiated:", data);
-        setVerificationStatus("pending");
+        console.log("LinkedIn OAuth URL generated:", data);
+        // Redirect user to LinkedIn OAuth
+        window.location.href = data.authUrl;
         return data;
       } else {
-        console.error("Error initiating LinkedIn verification:", data);
+        console.error("Error generating LinkedIn OAuth URL:", data);
         throw new Error(
-          data.message || "Failed to initiate LinkedIn verification"
+          data.message || "Failed to generate LinkedIn OAuth URL"
         );
       }
     } catch (error) {
@@ -130,7 +119,7 @@ export const MentorSignUp = () => {
   // Check LinkedIn verification status
   const checkVerificationStatus = async (userId: string) => {
     try {
-      const response = await fetch(`/api/phyllo/linkedin/status/${userId}`, {
+      const response = await fetch(`/api/linkedin/status/${userId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -140,8 +129,8 @@ export const MentorSignUp = () => {
 
       if (response.ok) {
         console.log("Verification status:", data);
-        setVerificationStatus(data.data.status);
-        return data.data;
+        setVerificationStatus(data.verified ? "verified" : "not_initiated");
+        return data;
       } else {
         console.error("Error checking verification status:", data);
         return null;
@@ -257,21 +246,11 @@ export const MentorSignUp = () => {
         if (res.ok) {
           console.log("Registration successful:", data);
 
-          // If user wants LinkedIn verification, initiate Phyllo verification
+          // If user wants LinkedIn verification, initiate OAuth verification
           if (wantsLinkedInVerification && data.userId) {
             try {
-              await initiateLinkedInVerification(
-                data.userId,
-                mentorFormData.linkedInUrl
-              );
-
-              // Show success message with verification status
-              alert(
-                "Registration successful! LinkedIn verification has been initiated. You will receive updates on your verification status."
-              );
-
-              // Navigate to sign-in page
-              navigate("/mentor-signin");
+              await initiateLinkedInVerification(data.userId);
+              // User will be redirected to LinkedIn OAuth, so no need to navigate here
             } catch (verificationError) {
               console.error("LinkedIn verification error:", verificationError);
               alert(

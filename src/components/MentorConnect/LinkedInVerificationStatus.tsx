@@ -26,7 +26,7 @@ export const LinkedInVerificationStatus: React.FC<
     setError(null);
 
     try {
-      const response = await fetch(`/api/phyllo/linkedin/status/${userId}`, {
+      const response = await fetch(`/api/linkedin/status/${userId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -35,9 +35,10 @@ export const LinkedInVerificationStatus: React.FC<
       const data = await response.json();
 
       if (response.ok) {
-        setStatus(data.data.status);
-        setProfileData(data.data.profileData);
-        onStatusUpdate?.(data.data.status);
+        const status = data.verified ? "verified" : "not_initiated";
+        setStatus(status);
+        setProfileData(data.profile);
+        onStatusUpdate?.(status);
       } else {
         setError(data.message || "Failed to check verification status");
       }
@@ -64,7 +65,7 @@ export const LinkedInVerificationStatus: React.FC<
       case "pending":
         return <ClockIcon className="h-5 w-5 text-yellow-500" />;
       case "failed":
-      case "disconnected":
+      case "expired":
         return <XCircleIcon className="h-5 w-5 text-red-500" />;
       default:
         return <AlertCircleIcon className="h-5 w-5 text-gray-500" />;
@@ -81,8 +82,8 @@ export const LinkedInVerificationStatus: React.FC<
         return "Pending Verification";
       case "failed":
         return "Verification Failed";
-      case "disconnected":
-        return "Disconnected";
+      case "expired":
+        return "Connection Expired";
       case "not_initiated":
         return "Not Verified";
       default:
@@ -99,7 +100,7 @@ export const LinkedInVerificationStatus: React.FC<
       case "pending":
         return "text-yellow-700 bg-yellow-50 border-yellow-200";
       case "failed":
-      case "disconnected":
+      case "expired":
         return "text-red-700 bg-red-50 border-red-200";
       default:
         return "text-gray-700 bg-gray-50 border-gray-200";
@@ -116,8 +117,8 @@ export const LinkedInVerificationStatus: React.FC<
         return "Your LinkedIn verification is in progress. This may take a few minutes.";
       case "failed":
         return "LinkedIn verification failed. Please try again.";
-      case "disconnected":
-        return "Your LinkedIn connection was lost. Please reconnect.";
+      case "expired":
+        return "Your LinkedIn connection has expired. Please reconnect.";
       case "not_initiated":
         return "LinkedIn verification has not been initiated yet.";
       default:

@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    // LinkedIn verification fields (updated for Phyllo)
+    // LinkedIn verification fields (OAuth-based)
     linkedInProfile: {
       linkedInId: String,
       headline: String,
@@ -44,7 +44,9 @@ const userSchema = new mongoose.Schema(
       position: String,
       profileUrl: String,
       linkedInUrl: String, // LinkedIn URL for verification
-      phylloAccountId: String, // Phyllo account ID
+      accessToken: String, // OAuth access token
+      refreshToken: String, // OAuth refresh token
+      tokenExpiry: Date, // Token expiration date
       verificationStatus: {
         type: String,
         enum: [
@@ -53,7 +55,7 @@ const userSchema = new mongoose.Schema(
           "connected",
           "verified",
           "failed",
-          "disconnected",
+          "expired",
         ],
         default: "not_initiated",
       },
@@ -63,7 +65,7 @@ const userSchema = new mongoose.Schema(
       },
       verificationDate: Date,
       lastUpdated: Date,
-      // Additional Phyllo fields
+      // Profile data from LinkedIn API
       profileData: {
         type: mongoose.Schema.Types.Mixed,
         default: null,

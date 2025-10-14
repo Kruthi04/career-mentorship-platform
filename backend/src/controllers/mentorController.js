@@ -551,18 +551,33 @@ exports.resendVerificationEmail = async (req, res) => {
 // Get all verified mentors
 exports.getVerifiedMentors = async (req, res) => {
   try {
-    const mentors = await Mentor.find({ verified: true });
+    console.log("=== getVerifiedMentors Debug ===");
+    
+    const mentors = await Mentor.find({ verified: true }).sort({
+      createdAt: -1,
+    });
+
+    console.log(`Found ${mentors.length} verified mentors`);
 
     // Convert S3 keys to URLs for each mentor
     const mentorsWithUrls = await Promise.all(
-      mentors.map(async (mentor) => ({
-        ...mentor.toObject(),
-        profileImage: await getS3Url(mentor.profileImage),
-      }))
+      mentors.map(async (mentor) => {
+        const mentorObj = mentor.toObject();
+        const profileImageUrl = await getS3Url(mentor.profileImage);
+        
+        console.log(`Mentor: ${mentorObj.fullName}, Profile Image: ${profileImageUrl}`);
+        
+        return {
+          ...mentorObj,
+          profileImage: profileImageUrl,
+        };
+      })
     );
 
+    console.log(`Returning ${mentorsWithUrls.length} mentors with URLs`);
     res.json(mentorsWithUrls);
   } catch (err) {
+    console.error("Error in getVerifiedMentors:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -604,26 +619,7 @@ exports.getAllMentors = async (req, res) => {
   }
 };
 
-// Get verified mentors only
-exports.getVerifiedMentors = async (req, res) => {
-  try {
-    const mentors = await Mentor.find({ verified: true }).sort({
-      createdAt: -1,
-    });
 
-    // Convert S3 keys to URLs for each mentor
-    const mentorsWithUrls = await Promise.all(
-      mentors.map(async (mentor) => ({
-        ...mentor.toObject(),
-        profileImage: await getS3Url(mentor.profileImage),
-      }))
-    );
-
-    res.json(mentorsWithUrls);
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-};
 
 // Get mentors by help area
 exports.getMentorsByHelpArea = async (req, res) => {

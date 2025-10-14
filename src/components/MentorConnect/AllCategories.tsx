@@ -725,8 +725,19 @@ export const AllCategories = () => {
       </section>
 
       {/* Content Section */}
-      <section className="py-12">
+      <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
+          {!selectedCategory && (
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-800 mb-4">
+                Choose Your Expertise Area
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-4">
+                Browse through our comprehensive categories to find mentors who
+                specialize in your field of interest.
+              </p>
+            </div>
+          )}
           {selectedCategory ? (
             /* Show filtered mentors */
             <div>
@@ -874,19 +885,59 @@ export const AllCategories = () => {
               {categories.map((category) => (
                 <div
                   key={category.id}
-                  className={`relative rounded-lg p-6 cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 bg-[#C0D7FB] hover:border-mariner overflow-hidden`}
+                  className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all duration-300 flex flex-col h-full cursor-pointer relative border border-gray-100 hover:border-blue-200 hover:transform hover:scale-105"
                   onClick={() =>
                     navigate(`/all-categories?category=${category.id}`)
                   }
                 >
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-4">
-                      <div
-                        className={`w-12 h-12 rounded-lg ${category.color} flex items-center justify-center`}
-                      >
-                        <div className="text-white">{category.icon}</div>
+                  {/* Popular Badge for top categories */}
+                  {category.id <= 3 && (
+                    <div className="absolute -top-3 -right-3 z-10">
+                      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                        Popular
                       </div>
-                      <span className="text-xs font-medium text-gray-500">
+                    </div>
+                  )}
+
+                  <div className="mb-4">
+                    <div
+                      className={`w-16 h-16 rounded-lg ${category.color} flex items-center justify-center mb-4`}
+                    >
+                      <div className="text-white text-2xl">{category.icon}</div>
+                    </div>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    {category.name}
+                  </h3>
+                  <p className="text-gray-600 mb-4 flex-grow">
+                    {category.description}
+                  </p>
+
+                  {/* Features List */}
+                  <ul className="space-y-2 mb-6">
+                    {getCategorySkills(category.id)
+                      .slice(0, 3)
+                      .map((skill: string, index: number) => (
+                        <li key={index} className="flex items-start">
+                          <CheckCircleIcon
+                            size={16}
+                            className="text-blue-500 mr-2 mt-0.5 flex-shrink-0"
+                          />
+                          <span className="text-sm text-gray-600">{skill}</span>
+                        </li>
+                      ))}
+                    {getCategorySkills(category.id).length > 3 && (
+                      <li className="text-sm text-gray-500">
+                        +{getCategorySkills(category.id).length - 3} more skills
+                      </li>
+                    )}
+                  </ul>
+
+                  <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center space-x-2">
+                      <UserIcon size={16} className="text-gray-400" />
+                      <span className="text-sm text-gray-600">
                         {
                           mentors.filter(
                             (mentor) => categorizeMentor(mentor) === category.id
@@ -895,31 +946,15 @@ export const AllCategories = () => {
                         mentors
                       </span>
                     </div>
-                    <h3 className="font-semibold text-gray-800 text-lg mb-2">
-                      {category.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      {category.description}
-                    </p>
-
-                    <div className="mb-4">
-                      <div className="flex flex-wrap gap-1">
-                        {getCategorySkills(category.id).map(
-                          (skill: string, index: number) => (
-                            <span
-                              key={index}
-                              className="text-xs bg-white bg-opacity-70 px-2 py-1 rounded text-gray-600"
-                            >
-                              {skill}
-                            </span>
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="w-full mt-3 text-sm text-mariner hover:text-royal-blue font-medium transition-all duration-200">
-                      View mentors →
-                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/all-categories?category=${category.id}`);
+                      }}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      Explore
+                    </button>
                   </div>
                 </div>
               ))}
@@ -927,6 +962,59 @@ export const AllCategories = () => {
           )}
         </div>
       </section>
+
+      {/* How It Works Section */}
+      {!selectedCategory && (
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold text-gray-800 text-center mb-12">
+              How MentorConnect Works
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center relative">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 relative z-10">
+                  <UserIcon size={32} className="text-blue-600" />
+                </div>
+                {/* Connector line */}
+                <div className="hidden md:block absolute top-10 left-1/2 w-full h-0.5 bg-blue-100 -z-0"></div>
+                <h3 className="text-xl font-bold text-gray-800 mb-3">
+                  Choose Your Category
+                </h3>
+                <p className="text-gray-600">
+                  Select from our comprehensive list of expertise areas to find
+                  mentors who match your learning goals.
+                </p>
+              </div>
+              <div className="text-center relative">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 relative z-10">
+                  <StarIcon size={32} className="text-blue-600" />
+                </div>
+                {/* Connector line */}
+                <div className="hidden md:block absolute top-10 left-1/2 w-full h-0.5 bg-blue-100 -z-0"></div>
+                <h3 className="text-xl font-bold text-gray-800 mb-3">
+                  Browse Mentors
+                </h3>
+                <p className="text-gray-600">
+                  Explore verified mentors in your chosen field, read their
+                  profiles, and check their availability.
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CalendarIcon size={32} className="text-blue-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-3">
+                  Book & Learn
+                </h3>
+                <p className="text-gray-600">
+                  Schedule a session with your chosen mentor and start your
+                  learning journey with expert guidance.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Booking Modal Popup */}
       {selectedMentor && (

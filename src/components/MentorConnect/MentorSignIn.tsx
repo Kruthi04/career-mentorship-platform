@@ -21,6 +21,7 @@ export const MentorSignIn = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState("");
+  const [backendUrl, setBackendUrl] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,6 +34,12 @@ export const MentorSignIn = () => {
       try {
         console.log("Testing API client connection...");
         setDebugInfo("Testing connection to backend...");
+
+        // Show which backend URL is being used
+        const apiUrl =
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api";
+        setBackendUrl(apiUrl);
+        console.log("Using backend URL:", apiUrl);
 
         const response = await ApiClient.get("/auth/session");
         console.log("API client test successful:", response.status);
@@ -63,24 +70,6 @@ export const MentorSignIn = () => {
 
     try {
       console.log("Attempting to login with email:", email);
-
-      // Test backend connection first
-      try {
-        const testResponse = await fetch(
-          "http://localhost:5050/api/auth/session"
-        );
-        console.log("Backend test response:", testResponse.status);
-        if (!testResponse.ok) {
-          throw new Error(`Backend test failed: ${testResponse.status}`);
-        }
-      } catch (testError) {
-        console.error("Backend connection test failed:", testError);
-        setError(
-          "Cannot connect to server. Please ensure the backend is running on port 5050."
-        );
-        setIsLoading(false);
-        return;
-      }
 
       const response = await ApiClient.post("/auth/login", { email, password });
       console.log("Login response status:", response.status);
@@ -144,6 +133,11 @@ export const MentorSignIn = () => {
         {debugInfo && (
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">{debugInfo}</p>
+            {backendUrl && (
+              <p className="text-xs text-blue-600 mt-1">
+                Backend: {backendUrl}
+              </p>
+            )}
           </div>
         )}
 

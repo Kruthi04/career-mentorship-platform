@@ -383,15 +383,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 )}
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={onLogout}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
-              >
-                <LogOutIcon size={20} />
-                <span>Logout</span>
-              </button>
-            </div>
           </div>
         </div>
 

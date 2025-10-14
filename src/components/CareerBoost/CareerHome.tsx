@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FileTextIcon,
   LinkedinIcon,
@@ -14,9 +14,27 @@ import {
 } from "lucide-react";
 
 export const CareerHome = () => {
+  const navigate = useNavigate();
   const [chatbotMinimized, setChatbotMinimized] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
   const [selectedCard, setSelectedCard] = useState<string | null>("resume");
+
+  // Check if user is logged in
+  const isLoggedIn = () => {
+    const token = localStorage.getItem("token");
+    return !!token;
+  };
+
+  // Handle service navigation with authentication check
+  const handleServiceClick = (serviceLink: string) => {
+    if (!isLoggedIn()) {
+      // Store the intended destination for after login
+      localStorage.setItem("redirectAfterLogin", serviceLink);
+      navigate("/login");
+      return;
+    }
+    navigate(serviceLink);
+  };
 
   const services = [
     {
@@ -182,13 +200,15 @@ export const CareerHome = () => {
                   <span className="text-2xl font-bold text-blue-600">
                     {service.price}
                   </span>
-                  <Link
-                    to={service.link}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleServiceClick(service.link);
+                    }}
                     className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
                   >
                     Get Started
-                  </Link>
+                  </button>
                 </div>
               </div>
             ))}

@@ -31,7 +31,7 @@ import {
   FileTextIcon,
   ArrowLeftIcon,
 } from "lucide-react";
-import console from "console";
+
 export const MentorHome = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -62,11 +62,13 @@ export const MentorHome = () => {
 
   // Function to categorize mentors based on their skills
   const categorizeMentor = (mentor: any) => {
+    if (!mentor) return null;
+
     const skills = [
       ...(mentor.areasOfExpertise || []),
       ...(mentor.skills || []),
     ];
-    const skillsLower = skills.map((skill) => skill.toLowerCase());
+    const skillsLower = skills.map((skill) => (skill || "").toLowerCase());
 
     // Software Development skills
     const softwareDevSkills = [
@@ -316,9 +318,18 @@ export const MentorHome = () => {
   };
 
   // Filter mentors based on active category
-  const filteredMentors = (mentors || []).filter(
-    (mentor: any) => mentor.verified
-  );
+  const filteredMentors = mentors || [];
+
+  // Debug logging
+  console.log("Current mentors state:", mentors);
+  console.log("Filtered mentors:", filteredMentors);
+  console.log("Mentors length:", mentors?.length || 0);
+
+  // Monitor mentors state changes
+  useEffect(() => {
+    console.log("Mentors state changed:", mentors);
+    console.log("Number of mentors:", mentors?.length || 0);
+  }, [mentors]);
 
   // Check if user is logged in
   useEffect(() => {
@@ -328,16 +339,32 @@ export const MentorHome = () => {
 
   // Fetch mentors from backend
   useEffect(() => {
+    console.log("MentorHome component mounted, starting to fetch mentors");
+
     const fetchMentors = async () => {
       try {
         setLoading(true);
+        console.log("Fetching mentors from /api/mentors/verified");
+
         const response = await fetch("/api/mentors/verified");
+        console.log("Response status:", response.status);
+        console.log("Response headers:", response.headers);
+
         if (!response.ok) {
-          throw new Error("Failed to fetch mentors");
+          const errorText = await response.text();
+          console.error("Response error:", errorText);
+          throw new Error(
+            `Failed to fetch mentors: ${response.status} ${response.statusText}`
+          );
         }
+
         const data = await response.json();
+        console.log("Mentors data received:", data);
+        console.log("Setting mentors state with data:", data);
         setMentors(data);
+        console.log("Mentors state set successfully");
       } catch (err: any) {
+        console.error("Error fetching mentors:", err);
         setError(err.message);
         // Fallback to hardcoded mentors if API fails
         setMentors([
@@ -456,65 +483,72 @@ export const MentorHome = () => {
     };
     fetchMentors();
   }, []);
+  // Define categories with safe filtering
   const categories = [
     {
       id: 1,
       name: "Software Development",
-      count: mentors.filter((mentor) => categorizeMentor(mentor) === 1).length,
+      count: (mentors || []).filter((mentor) => categorizeMentor(mentor) === 1)
+        .length,
       color: "bg-mariner",
       textColor: "text-white",
       iconColor: "text-white",
-      description: "Learn backend & frontend technologies",
+      description: "Full-stack development and programming tools",
       icon: <CodeIcon className="w-6 h-6" />,
     },
     {
       id: 2,
       name: "Data Science",
-      count: mentors.filter((mentor) => categorizeMentor(mentor) === 2).length,
+      count: (mentors || []).filter((mentor) => categorizeMentor(mentor) === 2)
+        .length,
       color: "bg-royal-blue",
       textColor: "text-white",
       iconColor: "text-white",
-      description: "Master analytics & machine learning",
+      description: "Analytics and machine learning expertise",
       icon: <BarChart3Icon className="w-6 h-6" />,
     },
     {
       id: 3,
       name: "Business",
-      count: mentors.filter((mentor) => categorizeMentor(mentor) === 3).length,
+      count: (mentors || []).filter((mentor) => categorizeMentor(mentor) === 3)
+        .length,
       color: "bg-lynch",
       textColor: "text-white",
       iconColor: "text-white",
-      description: "Strategy, management & leadership",
+      description: "Strategy and leadership development",
       icon: <BriefcaseIcon className="w-6 h-6" />,
     },
     {
       id: 4,
       name: "Marketing",
-      count: mentors.filter((mentor) => categorizeMentor(mentor) === 4).length,
+      count: (mentors || []).filter((mentor) => categorizeMentor(mentor) === 4)
+        .length,
       color: "bg-mariner",
       textColor: "text-white",
       iconColor: "text-white",
-      description: "Growth, SEO & content strategy",
+      description: "Digital marketing and growth strategies",
       icon: <TrendingUpIcon className="w-6 h-6" />,
     },
     {
       id: 5,
       name: "Design",
-      count: mentors.filter((mentor) => categorizeMentor(mentor) === 5).length,
+      count: (mentors || []).filter((mentor) => categorizeMentor(mentor) === 5)
+        .length,
       color: "bg-royal-blue",
       textColor: "text-white",
       iconColor: "text-white",
-      description: "UX/UI & product design",
+      description: "User experience and visual design tools",
       icon: <PenToolIcon className="w-6 h-6" />,
     },
     {
       id: 6,
       name: "Product Management",
-      count: mentors.filter((mentor) => categorizeMentor(mentor) === 6).length,
+      count: (mentors || []).filter((mentor) => categorizeMentor(mentor) === 6)
+        .length,
       color: "bg-lynch",
       textColor: "text-white",
       iconColor: "text-white",
-      description: "Product strategy & roadmapping",
+      description: "Product strategy and agile methodologies",
       icon: <LayoutIcon className="w-6 h-6" />,
     },
   ];
@@ -664,26 +698,32 @@ export const MentorHome = () => {
             {categories.map((category) => (
               <div
                 key={category.id}
-                className={`relative rounded-lg p-6 cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 bg-[#C0D7FB] hover:border-mariner overflow-hidden`}
+                className="relative rounded-xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-200 bg-blue-600 hover:bg-blue-700 overflow-hidden shadow-sm"
                 onClick={() => handleCategoryClick(category)}
               >
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <div
-                      className={`w-10 h-10 rounded-lg ${category.color} flex items-center justify-center`}
-                    >
-                      <div className="text-white">{category.icon}</div>
-                    </div>
-                    <span className="text-xs font-medium text-gray-400">
+                  {/* Icon */}
+                  <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mb-4">
+                    <div className="text-blue-600">{category.icon}</div>
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="font-bold text-white text-lg mb-2">
+                    {category.name}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-white text-sm mb-4 opacity-90">
+                    {category.description}
+                  </p>
+
+                  {/* Mentor Count */}
+                  <div className="flex items-center">
+                    <UserIcon size={14} className="text-white mr-2" />
+                    <span className="text-white text-xs">
                       {category.count} mentors
                     </span>
                   </div>
-                  <h3 className="font-semibold text-gray-800 text-base mb-2">
-                    {category.name}
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    {category.description}
-                  </p>
 
                   {/* Popular Skills - Minimal */}
                   <div className="mb-4">
@@ -753,6 +793,9 @@ export const MentorHome = () => {
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <p className="mt-4 text-gray-600">Loading mentors...</p>
+              <p className="text-sm text-gray-500">
+                Debug: Loading state is true
+              </p>
             </div>
           ) : error ? (
             <div className="text-center py-12">
@@ -760,8 +803,11 @@ export const MentorHome = () => {
                 Error loading mentors: {error}
               </p>
               <p className="text-gray-600">Showing sample mentors</p>
+              <p className="text-sm text-gray-500">
+                Debug: Error state is true
+              </p>
             </div>
-          ) : mentors.length === 0 ? (
+          ) : filteredMentors.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-600">
                 No verified mentors available at the moment.

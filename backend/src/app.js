@@ -11,6 +11,7 @@ const resumeRoutes = require("./routes/resume");
 const linkedInRoutes = require("./routes/linkedIn");
 const sessionRoutes = require("./routes/session");
 const phylloRoutes = require("./routes/phyllo");
+const searchRoutes = require("./routes/search");
 
 const app = express();
 const PORT = 5050;
@@ -37,6 +38,16 @@ app.use(
       "http://localhost:5179",
       "http://localhost:5180",
       "http://localhost:3000",
+      // Add common Vercel domains
+      "https://careerhub.vercel.app",
+      "https://careerhub-git-main.vercel.app",
+      "https://careerhub-git-develop.vercel.app",
+      // Allow any Vercel subdomain
+      /^https:\/\/.*\.vercel\.app$/,
+      // Allow any custom domain
+      /^https:\/\/.*\.com$/,
+      /^https:\/\/.*\.net$/,
+      /^https:\/\/.*\.org$/,
     ],
     credentials: true,
   })
@@ -61,8 +72,21 @@ app.use(
 
 // Session validation middleware
 app.use((req, res, next) => {
-  // Skip session validation for login and register routes
-  if (req.path === "/api/auth/login" || req.path === "/api/auth/register") {
+  // Skip session validation for public routes
+  const publicRoutes = [
+    "/api/auth/login",
+    "/api/auth/register",
+    "/api/mentors/verified",
+    "/api/mentors/help-area",
+    "/api/mentors/", // Allow access to mentor details
+    "/api/resumes/", // Allow access to resume routes (uses JWT auth)
+    "/api/search/mentors", // Allow public mentor search
+    "/api/search/suggestions", // Allow public search suggestions
+    "/api/search/analytics", // Allow public search analytics
+    "/api/search/global", // Allow public global search
+  ];
+
+  if (publicRoutes.some((route) => req.path.startsWith(route))) {
     return next();
   }
 
@@ -109,6 +133,7 @@ app.use("/api/resumes", resumeRoutes);
 app.use("/api/linkedin", linkedInRoutes);
 app.use("/api/sessions", sessionRoutes);
 app.use("/api/phyllo", phylloRoutes);
+app.use("/api/search", searchRoutes);
 
 // Test route
 app.get("/", (req, res) => {

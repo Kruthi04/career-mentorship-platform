@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeftIcon,
   ClockIcon,
@@ -32,8 +32,20 @@ interface Mentor {
 }
 
 export const LinkedInFix = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [linkedInUrl, setLinkedInUrl] = useState("");
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      // Store the current path for redirect after login
+      localStorage.setItem("redirectAfterLogin", "/career-boost/linkedin-fix");
+      navigate("/login");
+      return;
+    }
+  }, [navigate]);
   const [industry, setIndustry] = useState("");
   const [experience, setExperience] = useState("");
   const [targetRole, setTargetRole] = useState("");
@@ -843,19 +855,13 @@ export const LinkedInFix = () => {
                   </ul>
                 </div>
 
-                <div className="flex justify-center space-x-4">
+                <div className="flex justify-center">
                   <Link
                     to="/dashboard"
                     className="px-6 py-2 bg-mariner text-white rounded-md hover:bg-royal-blue"
                   >
                     Go to Dashboard
                   </Link>
-                  <button
-                    onClick={resetForm}
-                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-                  >
-                    Submit Another Review
-                  </button>
                 </div>
               </div>
             )}
